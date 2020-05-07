@@ -4,6 +4,9 @@ export type OptionalObject<o extends object, f extends Falsy = Falsy> = {} exten
 export type OptionalArray<a extends readonly any[], f extends Falsy = Falsy> = [] extends a ? a | f : a;
 export type Primitive = string | symbol | bigint | number | boolean | null | undefined | void;
 
+export type Keyof<t> = t extends any ? keyof t : never;
+export type Valueof<t> = t extends any ? t[keyof t] : never;
+
 export type PositiveInfinity = 12e309;
 export type NegativeInfinity = -12e309;
 export const PositiveInfinity = 12e309;
@@ -56,7 +59,7 @@ export function equals(a: unknown, b: unknown): boolean {
     return false;
 }
 
-export const objectKeys = Object.keys as { <o>(object: o): (keyof o)[] };
+export const objectKeys = Object.keys as { <o>(object: o): (Keyof<o>)[] };
 
 const { hasOwnProperty, propertyIsEnumerable } = {};
 

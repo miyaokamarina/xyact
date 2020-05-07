@@ -1,4 +1,4 @@
-import { Primitive, Falsy, StringLike, Pointer, DEV, u } from './Prelude';
+import { Keyof, Primitive, Falsy, StringLike, Pointer, DEV, u, Valueof } from './Prelude';
 import { X, Y } from './Xyact';
 
 import { Throw } from './Error';
@@ -29,6 +29,9 @@ declare module './Xyact' {
         }
 
         export type NativeElement = NativesRegistry[NativeType];
+
+        export type AttributeName = Keyof<NativeElement[typeof never][2]>;
+        export type AttributeValue = Valueof<NativeElement[typeof never][2]>;
     }
 
     export namespace Y {
