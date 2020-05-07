@@ -7,23 +7,23 @@ import { Seed } from './Seed';
 
 const implicits: symbol[] = [];
 
-function preinsNode(instructions: Y.Instruction[], element: Y.Element, previousElement: Y.Element | undefined, newElement: Y.Element): void {
-    instructions.push([Y.InstructionCode.PreinsNode, element, previousElement, newElement]);
+function preinsNode(instructions: Y.Instruction[], element: Y.Element, previous: Y.Element | undefined, newElement: Y.Element): void {
+    instructions.push([Y.InstructionCode.PreinsNode, element, previous, newElement]);
 }
 
 function setAttribute(instructions: Y.Instruction[], element: Y.Element, key: unknown, value: unknown): void {
     instructions.push([Y.InstructionCode.SetAttribute, element, key, value]);
 }
 
-function link(newElement: Y.Element, previousElement: Y.Element | undefined): Y.Element {
-    newElement[Y.ElementProps.previous] = previousElement;
+function link(newElement: Y.Element, previous: Y.Element | undefined): Y.Element {
+    newElement[Y.ElementProps.previous] = previous;
 
     return newElement;
 }
 
-function relocate(root: Y.Root, element: Y.Element, oldElement: Y.Element, newElement: Y.Element, previousElement: Y.Element | undefined): void {
-    if (oldElement[Y.ElementProps.previous]?.[Y.ElementProps.dom] !== previousElement?.[Y.ElementProps.dom]) {
-        preinsNode(root[Y.RootProps.instructions], element, previousElement, newElement);
+function relocate(root: Y.Root, element: Y.Element, oldElement: Y.Element, newElement: Y.Element, previous: Y.Element | undefined): void {
+    if (oldElement[Y.ElementProps.previous]?.[Y.ElementProps.dom] !== previous?.[Y.ElementProps.dom]) {
+        preinsNode(root[Y.RootProps.instructions], element, previous, newElement);
     }
 }
 
@@ -58,17 +58,17 @@ function branch3(
     oldElement: Y.Element,
     newNode: X.Node,
     newSeed: Y.Seed,
-    previousElement: Y.Element | undefined,
+    previous: Y.Element | undefined,
 ) {
     let newElement = evaluateSeed(root, newSeed);
 
     teardownReplace(root, oldElement, newElement);
-    relocate(root, element, oldElement, newElement, previousElement);
+    relocate(root, element, oldElement, newElement, previous);
 
     newResult.set(key, ResultRecord(newNode, newElement));
     oldResult.delete(key);
 
-    return link(newElement, previousElement);
+    return link(newElement, previous);
 }
 
 function branch4(
@@ -80,11 +80,11 @@ function branch4(
     oldElement: Y.Element,
     newNode: X.Node,
     newSeed: Y.Seed,
-    previousElement: Y.Element | undefined,
+    previous: Y.Element | undefined,
 ) {
     updateElement(root, oldElement, newSeed);
 
-    return branch5(root, element, key, oldResult, newResult, oldElement, newNode, newSeed, previousElement);
+    return branch5(root, element, key, oldResult, newResult, oldElement, newNode, newSeed, previous);
 }
 
 function branch5(
@@ -96,13 +96,13 @@ function branch5(
     oldElement: Y.Element,
     newNode: X.Node,
     __: Y.Seed,
-    previousElement: Y.Element | undefined,
+    previous: Y.Element | undefined,
 ) {
     newResult.set(key, ResultRecord(newNode, oldElement));
     oldResult.delete(key);
-    relocate(root, element, oldElement, oldElement, previousElement);
+    relocate(root, element, oldElement, oldElement, previous);
 
-    return link(oldElement, previousElement);
+    return link(oldElement, previous);
 }
 
 function branch6(
@@ -114,14 +114,14 @@ function branch6(
     __: Y.Element,
     newNode: X.Node,
     newSeed: Y.Seed,
-    previousElement: Y.Element | undefined,
+    previous: Y.Element | undefined,
 ) {
     let newElement = evaluateSeed(root, newSeed);
 
-    preinsNode(root[Y.RootProps.instructions], element, previousElement, newElement);
+    preinsNode(root[Y.RootProps.instructions], element, previous, newElement);
     newResult.set(key, ResultRecord(newNode, newElement));
 
-    return link(newElement, previousElement);
+    return link(newElement, previous);
 }
 
 function teardown(element: Y.Element): void {
@@ -216,7 +216,7 @@ function evaluateNative(root: Y.Root, element: Y.NativeElement): void {
         let i = 0;
         let j = 0;
         let newResult: Y.ResultMap = new Map<X.Key, Y.ResultRecord>();
-        let previousElement: Y.Element | undefined = u;
+        let previous: Y.Element | undefined = u;
         let keys = oldResult.keys();
 
         while (i < l) {
@@ -252,9 +252,24 @@ function evaluateNative(root: Y.Root, element: Y.NativeElement): void {
                                 oldResultRecord = oldResult.get(key);
 
                                 if (DEV) {
-                                    //
+                                    if (oldResultRecord) {
+                                        oldElement = oldResultRecord[Y.ResultRecordProps.element];
+                                        oldResult.delete(key);
+
+                                        if (!equals(oldResultRecord[Y.ResultRecordProps.node], newNode)) {
+                                            if (oldElement[Y.ElementProps.seed][Y.SeedProps.type] !== X.NativeType.Plain) {
+                                                previous = branch3(root, element, key, oldResult, newResult, oldElement, newNode, newSeed, previous);
+                                            } else {
+                                                previous = branch4(root, element, key, oldResult, newResult, oldElement, newNode, newSeed, previous);
+                                            }
+                                        } else {
+                                            previous = branch5(root, element, key, oldResult, newResult, oldElement, newNode, newSeed, previous);
+                                        }
+                                    } else {
+                                        previous = branch6(root, element, key, oldResult, newResult, oldElement, newNode, newSeed, previous);
+                                    }
                                 } else {
-                                    previousElement = (oldResultRecord
+                                    previous = (oldResultRecord
                                         ? ((oldElement = oldResultRecord[Y.ResultRecordProps.element]),
                                           oldResult.delete(key),
                                           !equals(oldResultRecord[Y.ResultRecordProps.node], newNode)
@@ -262,7 +277,7 @@ function evaluateNative(root: Y.Root, element: Y.NativeElement): void {
                                                   ? branch3
                                                   : branch4
                                               : branch5)
-                                        : branch6)(root, element, key, oldResult, newResult, oldElement, newNode, newSeed, previousElement);
+                                        : branch6)(root, element, key, oldResult, newResult, oldElement, newNode, newSeed, previous);
                                 }
 
                                 if (++i < l) {
@@ -275,19 +290,19 @@ function evaluateNative(root: Y.Root, element: Y.NativeElement): void {
                                 }
                             }
                         } else {
-                            previousElement = branch3(root, element, key, oldResult, newResult, oldElement, newNode, newSeed, previousElement);
+                            previous = branch3(root, element, key, oldResult, newResult, oldElement, newNode, newSeed, previous);
                             i++;
                         }
                     } else {
-                        previousElement = branch4(root, element, key, oldResult, newResult, oldElement, newNode, newSeed, previousElement);
+                        previous = branch4(root, element, key, oldResult, newResult, oldElement, newNode, newSeed, previous);
                         i++;
                     }
                 } else {
-                    previousElement = branch5(root, element, key, oldResult, newResult, oldElement, newNode, newSeed, previousElement);
+                    previous = branch5(root, element, key, oldResult, newResult, oldElement, newNode, newSeed, previous);
                     i++;
                 }
             } else {
-                previousElement = branch6(root, element, key, oldResult, newResult, u!, newNode, newSeed, previousElement);
+                previous = branch6(root, element, key, oldResult, newResult, u!, newNode, newSeed, previous);
                 i++;
             }
         }
