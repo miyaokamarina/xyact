@@ -24,53 +24,53 @@ declare module './Xyact' {
             | RemoveAttributeInstruction<d>;
 
         export const enum InstructionProps {
-            InstructionCode = 0,
-            NativeType = 1,
-            OldElement = 1,
-            ParentElement = 1,
-            PreviousSiblingElement = 1,
-            NewElement = 2,
-            TargetElement = 1,
-            AttributeName = 2,
-            AttributeValue = 3,
+            instructionCode = 0,
+            nativeType = 1,
+            oldElement = 1,
+            parentElement = 1,
+            previousSiblingElement = 1,
+            newElement = 2,
+            targetElement = 1,
+            attributeName = 2,
+            attributeValue = 3,
         }
 
         export interface BaseInstruction<t extends InstructionCode> {
-            [InstructionProps.InstructionCode]: t;
+            [InstructionProps.instructionCode]: t;
         }
 
         export interface CreateNodeInstruction extends BaseInstruction<InstructionCode.CreateNode> {
-            [InstructionProps.NativeType]: NativeType;
+            [InstructionProps.nativeType]: NativeType;
         }
 
         export interface ReplaceNodeInstruction<d> extends BaseInstruction<InstructionCode.ReplaceNode> {
-            [InstructionProps.OldElement]: Pointer<d>;
-            [InstructionProps.NewElement]: Pointer<d>;
+            [InstructionProps.oldElement]: Pointer<d>;
+            [InstructionProps.newElement]: Pointer<d>;
         }
 
         export interface RemoveNodeInstruction<d> extends BaseInstruction<InstructionCode.RemoveNode> {
-            [InstructionProps.OldElement]: Pointer<d>;
+            [InstructionProps.oldElement]: Pointer<d>;
         }
 
         export interface PrependNodeInstruction<d> extends BaseInstruction<InstructionCode.PrependNode> {
-            [InstructionProps.ParentElement]: Pointer<d>;
-            [InstructionProps.NewElement]: Pointer<d>;
+            [InstructionProps.parentElement]: Pointer<d>;
+            [InstructionProps.newElement]: Pointer<d>;
         }
 
         export interface InsertAfterNodeInstruction<d> extends BaseInstruction<InstructionCode.InsertAfterNode> {
-            [InstructionProps.PreviousSiblingElement]: Pointer<d>;
-            [InstructionProps.NewElement]: Pointer<d>;
+            [InstructionProps.previousSiblingElement]: Pointer<d>;
+            [InstructionProps.newElement]: Pointer<d>;
         }
 
         export interface SetAttributeInstruction<d> extends BaseInstruction<InstructionCode.SetAttribute> {
-            [InstructionProps.TargetElement]: Pointer<d>;
-            [InstructionProps.AttributeName]: any;
-            [InstructionProps.AttributeValue]: any;
+            [InstructionProps.targetElement]: Pointer<d>;
+            [InstructionProps.attributeName]: any;
+            [InstructionProps.attributeValue]: any;
         }
 
         export interface RemoveAttributeInstruction<d> extends BaseInstruction<InstructionCode.RemoveAttribute> {
-            [InstructionProps.TargetElement]: Pointer<d>;
-            [InstructionProps.AttributeName]: any;
+            [InstructionProps.targetElement]: Pointer<d>;
+            [InstructionProps.attributeName]: any;
         }
     }
 
@@ -80,7 +80,7 @@ declare module './Xyact' {
             ReplaceNode = 2,
             RemoveNode = 3,
 
-            PrependOrInsertAfterNode = 4,
+            PreinsNode = 4,
 
             SetAttribute = 5,
             RemoveAttribute = 6,
@@ -90,76 +90,76 @@ declare module './Xyact' {
             | CreateNodeInstruction
             | ReplaceNodeInstruction
             | RemoveNodeInstruction
-            | PrependOrInsertAfterNodeInstruction
+            | PreinsNodeInstruction
             | SetAttributeInstruction
             | RemoveAttributeInstruction;
 
         export const enum BaseInstructionProps {
-            InstructionCode = 0,
+            instructionCode = 0,
         }
 
         export interface BaseInstruction<t extends InstructionCode> {
-            [BaseInstructionProps.InstructionCode]: t;
+            [BaseInstructionProps.instructionCode]: t;
         }
 
         export const enum CreateNodeInstructionProps {
-            NativeType = 1,
+            element = 1,
         }
 
         export interface CreateNodeInstruction extends BaseInstruction<InstructionCode.CreateNode> {
-            [CreateNodeInstructionProps.NativeType]: X.NativeType;
+            [CreateNodeInstructionProps.element]: Element;
         }
 
         export const enum ReplaceNodeInstructionProps {
-            OldElement = 1,
-            NewElement = 2,
+            oldElement = 1,
+            newElement = 2,
         }
 
         export interface ReplaceNodeInstruction extends BaseInstruction<InstructionCode.ReplaceNode> {
-            [ReplaceNodeInstructionProps.OldElement]: Element;
-            [ReplaceNodeInstructionProps.NewElement]: Element;
+            [ReplaceNodeInstructionProps.oldElement]: Element;
+            [ReplaceNodeInstructionProps.newElement]: Element;
         }
 
         export const enum RemoveNodeInstructionProps {
-            OldElement = 1,
+            oldElement = 1,
         }
 
         export interface RemoveNodeInstruction extends BaseInstruction<InstructionCode.RemoveNode> {
-            [RemoveNodeInstructionProps.OldElement]: Element;
+            [RemoveNodeInstructionProps.oldElement]: Element;
         }
 
-        export const enum PrependOrInsertAfterNodeInstructionProps {
-            ParentElement = 1,
-            PreviousSiblingElement = 2,
-            NewElement = 3,
+        export const enum PreinsNodeInstructionProps {
+            parentElement = 1,
+            previousSiblingElement = 2,
+            newElement = 3,
         }
 
-        export interface PrependOrInsertAfterNodeInstruction extends BaseInstruction<InstructionCode.PrependOrInsertAfterNode> {
-            [PrependOrInsertAfterNodeInstructionProps.ParentElement]: Element;
-            [PrependOrInsertAfterNodeInstructionProps.PreviousSiblingElement]: Element;
-            [PrependOrInsertAfterNodeInstructionProps.NewElement]: Element;
+        export interface PreinsNodeInstruction extends BaseInstruction<InstructionCode.PreinsNode> {
+            [PreinsNodeInstructionProps.parentElement]: Element;
+            [PreinsNodeInstructionProps.previousSiblingElement]: Element | undefined;
+            [PreinsNodeInstructionProps.newElement]: Element;
         }
 
         export const enum SetAttributeInstructionProps {
-            TargetElement = 1,
-            AttributeName = 2,
-            AttributeValue = 3,
+            targetElement = 1,
+            attributeName = 2,
+            attributeValue = 3,
         }
 
         export interface SetAttributeInstruction extends BaseInstruction<InstructionCode.SetAttribute> {
-            [SetAttributeInstructionProps.TargetElement]: Element;
-            [SetAttributeInstructionProps.AttributeName]: any;
-            [SetAttributeInstructionProps.AttributeValue]: any;
+            [SetAttributeInstructionProps.targetElement]: Element;
+            [SetAttributeInstructionProps.attributeName]: any;
+            [SetAttributeInstructionProps.attributeValue]: any;
         }
 
         export const enum RemoveAttributeInstructionProps {
-            TargetElement = 1,
-            AttributeName = 2,
+            targetElement = 1,
+            attributeName = 2,
         }
 
         export interface RemoveAttributeInstruction extends BaseInstruction<InstructionCode.RemoveAttribute> {
-            [RemoveAttributeInstructionProps.TargetElement]: Element;
-            [RemoveAttributeInstructionProps.AttributeName]: any;
+            [RemoveAttributeInstructionProps.targetElement]: Element;
+            [RemoveAttributeInstructionProps.attributeName]: any;
         }
     }
 }

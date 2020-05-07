@@ -1,5 +1,6 @@
 import { Falsy, DEV, arrayEquals } from './Prelude';
 import { X, Y } from './Xyact';
+
 import { useElement } from './Element';
 import { scheduleTask, EffectTask } from './Scheduler';
 
@@ -38,16 +39,16 @@ export function Effect<p extends readonly any[]>(setup: X.SetupEffect<p>, option
 
     function useEffect(...params: p) {
         let element = useElement() as Y.CustomElement;
-        let hooks = element[Y.ElementProps.Hooks] || (element[Y.ElementProps.Hooks] = new WeakMap());
+        let hooks = element[Y.ElementProps.hooks] || (element[Y.ElementProps.hooks] = new WeakMap());
         let maybe: Y.EffectTask<p> = hooks.get(useEffect) as any;
 
         let task = maybe || EffectTask(priority, element, setup, params);
 
-        if (type === X.EffectType.Once && element[Y.ElementProps.Flags] & Y.ElementFlags.Attached) return;
+        if (type === X.EffectType.Once && element[Y.ElementProps.flags] & Y.ElementFlags.Attached) return;
         if (!maybe) hooks.set(useEffect, task);
 
-        if (type === X.EffectType.Always || !maybe || !arrayEquals(task[Y.TaskProps.Params], params)) {
-            task[Y.TaskProps.Params] = params;
+        if (type === X.EffectType.Always || !maybe || !arrayEquals(task[Y.TaskProps.params], params)) {
+            task[Y.TaskProps.params] = params;
 
             scheduleTask(task);
         }

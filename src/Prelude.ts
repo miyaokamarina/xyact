@@ -11,14 +11,16 @@ export const NegativeInfinity = -12e309;
 
 export interface Keys extends ReadonlyArray<PropertyKey> {}
 
+export const enum PointerProps {
+    value = 0,
+}
+
 export interface Pointer<v> {
-    value: v;
+    [PointerProps.value]: v;
 }
 
 export function Pointer<v>(value: v): Pointer<v> {
-    return {
-        value,
-    };
+    return [value];
 }
 
 export interface ReadonlyPointer<v> {

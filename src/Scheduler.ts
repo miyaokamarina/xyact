@@ -25,31 +25,31 @@ declare module './Xyact' {
         }
 
         export const enum TaskProps {
-            Type = 0,
-            Priority = 1,
-            Previous = 2,
-            Next = 3,
-            Element = 4,
-            Setup = 5,
-            Teardown = 6,
-            Params = 7,
+            type = 0,
+            priority = 1,
+            previous = 2,
+            next = 3,
+            element = 4,
+            setup = 5,
+            teardown = 6,
+            params = 7,
         }
 
         export interface BaseTask<t extends TaskType> {
-            [TaskProps.Type]: t;
-            [TaskProps.Priority]: X.Priority;
-            [TaskProps.Previous]: Task | undefined;
-            [TaskProps.Next]: Task | undefined;
+            [TaskProps.type]: t;
+            [TaskProps.priority]: X.Priority;
+            [TaskProps.previous]: Task | undefined;
+            [TaskProps.next]: Task | undefined;
         }
 
         export interface ElementTask<t extends TaskType> extends BaseTask<t> {
-            [TaskProps.Element]: Element;
+            [TaskProps.element]: Element;
         }
 
         export interface EffectTask<p extends readonly any[]> extends ElementTask<TaskType.Effect> {
-            [TaskProps.Setup]: X.SetupEffect<p>;
-            [TaskProps.Teardown]: X.TeardownEffect | undefined;
-            [TaskProps.Params]: p;
+            [TaskProps.setup]: X.SetupEffect<p>;
+            [TaskProps.teardown]: X.TeardownEffect | undefined;
+            [TaskProps.params]: p;
         }
 
         export interface EvaluationTask extends ElementTask<TaskType.Evaluation> {}
@@ -57,11 +57,11 @@ declare module './Xyact' {
         export interface TeardownTask extends ElementTask<TaskType.Teardown> {}
 
         export const enum QueueProps {
-            First = 0,
+            first = 0,
         }
 
         export interface Queue {
-            [QueueProps.First]: Task | undefined;
+            [QueueProps.first]: Task | undefined;
 
             [X.Priority.Maximum]: Segment;
             [X.Priority.User]: Segment;
@@ -72,13 +72,13 @@ declare module './Xyact' {
         }
 
         export const enum SegmentProps {
-            First = 0,
-            Last = 1,
+            first = 0,
+            last = 1,
         }
 
         export interface Segment {
-            [SegmentProps.First]: Task | undefined;
-            [SegmentProps.Last]: Task | undefined;
+            [SegmentProps.first]: Task | undefined;
+            [SegmentProps.last]: Task | undefined;
         }
     }
 }
@@ -128,11 +128,11 @@ export function EffectTask<p extends readonly any[]>(priority: X.Priority, eleme
 }
 
 export function scheduleTask(task: Y.Task): void {
-    let element = task[Y.TaskProps.Element];
-    let flags = element[Y.ElementProps.Flags];
-    let type = task[Y.TaskProps.Type];
-    let evaluation = element[Y.ElementProps.Evaluation];
-    let priority = task[Y.TaskProps.Priority];
+    let element = task[Y.TaskProps.element];
+    let flags = element[Y.ElementProps.flags];
+    let type = task[Y.TaskProps.type];
+    let evaluation = element[Y.ElementProps.evaluation];
+    let priority = task[Y.TaskProps.priority];
 
     if (type === Y.TaskType.Evaluation) {
         if (flags & Y.ElementFlags.Detached) {
@@ -145,15 +145,15 @@ export function scheduleTask(task: Y.Task): void {
             // 1. If its priority is less than priority of new task, dequeue it.
             // 2. Otherwise, short circuit.
 
-            if (evaluation[Y.TaskProps.Priority] > priority) dequeueTask(evaluation);
+            if (evaluation[Y.TaskProps.priority] > priority) dequeueTask(evaluation);
             else return;
         }
 
-        element[Y.ElementProps.Evaluation] = task;
+        element[Y.ElementProps.evaluation] = task;
     }
 
     if (type === Y.TaskType.Teardown) {
-        element[Y.ElementProps.Flags] |= Y.ElementFlags.Detached;
+        element[Y.ElementProps.flags] |= Y.ElementFlags.Detached;
     }
 
     if (DEV) {

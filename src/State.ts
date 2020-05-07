@@ -1,5 +1,6 @@
 import { DEV, equals, Falsy, u } from './Prelude';
 import { X, Y } from './Xyact';
+
 import { Effect } from './Effect';
 import { useElement } from './Element';
 import { ElementTask, scheduleTask } from './Scheduler';
@@ -61,7 +62,7 @@ export function State<p extends readonly any[], s>(initializer: X.StateInitializ
 
     function useState(...params: p): X.StateTuple<s> {
         let element = useElement() as Y.CustomElement;
-        let hooks = element[Y.ElementProps.Hooks] || (element[Y.ElementProps.Hooks] = new WeakMap());
+        let hooks = element[Y.ElementProps.hooks] || (element[Y.ElementProps.hooks] = new WeakMap());
         let maybe: Y.StateRecord<p, s> = hooks.get(useState) as any;
 
         let record: Y.StateRecord<p, s> = maybe || {

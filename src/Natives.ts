@@ -1,5 +1,6 @@
 import { Falsy, StringLike } from './Prelude';
 import { X } from './Xyact';
+
 import { Component } from './Component';
 
 declare module './Xyact' {

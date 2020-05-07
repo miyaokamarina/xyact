@@ -1,5 +1,6 @@
-import { Primitive, Falsy, StringLike, Pointer, DEV } from './Prelude';
+import { Primitive, Falsy, StringLike, Pointer, DEV, u } from './Prelude';
 import { X, Y } from './Xyact';
+
 import { Throw } from './Error';
 
 export const x_key = Symbol();
@@ -20,7 +21,7 @@ declare module './Xyact' {
         export type Element = CustomElement<BaseProps, readonly any[]> | NativeElement;
 
         export interface CustomElement<p extends BaseProps, c extends readonly any[]> {
-            readonly [never]: readonly ['custom', p, c]
+            readonly [never]: readonly ['custom', p, c];
         }
 
         export interface BaseNativeElement<t extends NativeType, p extends BaseProps, c extends readonly any[]> {
@@ -48,50 +49,48 @@ declare module './Xyact' {
         }
 
         export const enum ElementProps {
-            Flags = 0,
-            Seed = 1,
-            Parent = 2,
-            Previous = 3,
+            flags = 0,
+            seed = 1,
+            parent = 2,
+            previous = 3,
 
-            Root = 4,
-            Evaluation = 5,
-            Dom = 6,
+            root = 4,
+            evaluation = 5,
+            dom = 6,
 
-            Type = 7,
-            Props = 8,
-            Children = 9,
+            props = 7,
+            children = 8,
 
-            Result = 10,
-            Keys = 11,
-            Attributes = 11,
-            Hooks = 12,
+            result = 9,
+            keys = 10,
+            attributes = 10,
+            hooks = 11,
         }
 
-        interface BaseElement<z extends Seed, t, c> {
-            [ElementProps.Flags]: ElementFlags;
-            [ElementProps.Seed]: z;
+        interface BaseElement<z extends Seed, c> {
+            [ElementProps.flags]: ElementFlags;
+            [ElementProps.seed]: z;
 
-            [ElementProps.Parent]: Element | undefined;
-            [ElementProps.Previous]: Element | undefined;
+            [ElementProps.parent]: Element | undefined;
+            [ElementProps.previous]: Element | undefined;
 
-            [ElementProps.Root]: Root | undefined;
-            [ElementProps.Evaluation]: Task | undefined;
-            [ElementProps.Dom]: Pointer<any> | undefined;
+            [ElementProps.root]: Root | undefined;
+            [ElementProps.evaluation]: Task | undefined;
+            [ElementProps.dom]: Pointer<any> | undefined;
 
-            [ElementProps.Type]: t;
-            [ElementProps.Props]: X.BaseProps;
-            [ElementProps.Children]: c;
+            [ElementProps.props]: X.BaseProps;
+            [ElementProps.children]: c;
         }
 
-        export interface CustomElement extends BaseElement<CustomSeed, X.Render<any, any>, any[]> {
-            [ElementProps.Result]: Element | undefined;
-            [ElementProps.Keys]: PropertyKey[];
-            [ElementProps.Hooks]: WeakMap<object, any> | undefined;
+        export interface CustomElement extends BaseElement<CustomSeed, any[]> {
+            [ElementProps.result]: Element | undefined;
+            [ElementProps.keys]: PropertyKey[];
+            [ElementProps.hooks]: WeakMap<object, any> | undefined;
         }
 
-        export interface NativeElement extends BaseElement<NativeSeed, X.NativeType, X.Node[]> {
-            [ElementProps.Result]: ResultMap | undefined;
-            [ElementProps.Attributes]: AttributesMap | undefined;
+        export interface NativeElement extends BaseElement<NativeSeed, X.Node[]> {
+            [ElementProps.result]: ResultMap;
+            [ElementProps.attributes]: AttributesMap;
         }
 
         export interface AttributesMap extends Map<any, Pointer<any>> {}
@@ -99,27 +98,79 @@ declare module './Xyact' {
         export interface ResultMap extends Map<X.Key, ResultRecord> {}
 
         export const enum ResultRecordProps {
-            Node = 0,
-            Element = 1,
+            node = 0,
+            element = 1,
         }
 
         export interface ResultRecord {
-            [ResultRecordProps.Node]: X.Node;
-            [ResultRecordProps.Element]: Element;
+            [ResultRecordProps.node]: X.Node;
+            [ResultRecordProps.element]: Element;
+        }
+
+        export const enum RootProps {
+            instructions = 0,
+            queue = 1,
         }
 
         export interface Root {
-            instructions: Instruction[];
-            queue: Queue;
+            [RootProps.instructions]: Instruction[];
+            [RootProps.queue]: Queue;
         }
+
+        export type Type = X.Render<any, any> | X.NativeType;
     }
 }
 
-export function ResultRecord(node: X.Node, element: Y.Element): Y.ResultRecord {
+export function Element(seed: Y.CustomSeed): Y.CustomElement;
+export function Element(seed: Y.NativeSeed): Y.NativeElement;
+export function Element(seed: Y.Seed): Y.Element;
+export function Element(seed: Y.Seed): Y.Element {
+    if (DEV) {
+        if (seed[Y.SeedProps.flags] & Y.ElementFlags.Custom) {
+            return CustomElement(seed as Y.CustomSeed);
+        } else {
+            return NativeElement(seed as Y.NativeSeed);
+        }
+    } else {
+        return (seed[Y.SeedProps.flags] ? CustomElement : NativeElement)(seed as Y.CustomSeed & Y.NativeSeed);
+    }
+}
+
+function CustomElement(seed: Y.CustomSeed): Y.CustomElement {
     return [
-        node,
-        element,
+        Y.ElementFlags.Custom, // Flags
+        seed, //                  Seed
+        u, //                     Parent
+        u, //                     Previous
+        u, //                     Root
+        u, //                     Evaluation
+        u, //                     Dom
+        {}, //                    Props
+        [], //                    Children
+        u, //                     Result
+        [], //                    Keys
+        u, //                     Hooks
     ];
+}
+
+function NativeElement(seed: Y.NativeSeed): Y.NativeElement {
+    return [
+        Y.ElementFlags.Default, // Flags
+        seed, //                   Seed
+        u, //                      Parent
+        u, //                      Previous
+        u, //                      Root
+        u, //                      Evaluation
+        u, //                      Dom
+        {}, //                     Props
+        [], //                     Children
+        new Map(), //              Result
+        new Map(), //              Attributes
+    ];
+}
+
+export function ResultRecord(node: X.Node, element: Y.Element): Y.ResultRecord {
+    return [node, element];
 }
 
 export function useElement(): Y.Element {

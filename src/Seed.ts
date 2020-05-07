@@ -1,4 +1,5 @@
 import { X, Y } from './Xyact';
+
 import { fragment, plain } from './Natives';
 
 export const seeds = new WeakMap<X.Element, Y.Seed>();
@@ -8,21 +9,21 @@ declare module './Xyact' {
         export type Seed = CustomSeed | NativeSeed;
 
         export const enum SeedProps {
-            Flags = 0,
-            Key = 1,
-            Type = 2,
-            Props = 3,
-            Children = 4,
-            Owner = 5,
+            flags = 0,
+            key = 1,
+            type = 2,
+            props = 3,
+            children = 4,
+            owner = 5,
         }
 
         interface BaseSeed<f extends ElementFlags, t, c> {
-            [SeedProps.Flags]: f;
-            [SeedProps.Key]: X.Key;
-            [SeedProps.Type]: t;
-            [SeedProps.Props]: Record<PropertyKey, any>;
-            [SeedProps.Children]: c;
-            [SeedProps.Owner]: Element | undefined;
+            [SeedProps.flags]: f;
+            [SeedProps.key]: X.Key;
+            [SeedProps.type]: t;
+            [SeedProps.props]: Record<PropertyKey, any>;
+            [SeedProps.children]: c;
+            [SeedProps.owner]: Element | undefined;
         }
 
         export interface CustomSeed extends BaseSeed<ElementFlags.Custom, X.Render<any, any>, any[]> {}

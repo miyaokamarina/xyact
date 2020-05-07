@@ -1,6 +1,6 @@
 import { DEV, OptionalArray, OptionalObject } from './Prelude';
-
 import { X, Y } from './Xyact';
+
 import { useElement, x_key } from './Element';
 import { seeds } from './Seed';
 
@@ -30,7 +30,7 @@ declare module './Xyact' {
 export function Component<t extends X.NativeType>(type: t): X.NativeComponent<t>;
 export function Component<p extends X.BaseProps, c extends any[]>(type: X.Render<p, c>): X.CustomComponent<p, c>;
 export function Component(type: X.NativeType | X.Render<any, any>): X.Component {
-    let flags = typeof type === 'number' ? Y.ElementFlags.Default : Y.ElementFlags.Custom;
+    let flags = typeof type !== 'number' ? Y.ElementFlags.Custom : Y.ElementFlags.Default;
 
     function Component(props: any, children: any) {
         props = props || {};
