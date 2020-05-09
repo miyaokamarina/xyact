@@ -73,7 +73,9 @@ export function State<p extends readonly any[], s>(initializer: X.StateInitializ
 
                 if (silent) return;
 
-                scheduleTask(ElementTask(Y.TaskType.Evaluation, priority, element));
+                element[Y.ElementProps.flags] |= Y.ElementFlags.Dirty;
+
+                scheduleTask(element[Y.ElementProps.root]!, ElementTask(Y.TaskType.Evaluation, priority, element));
             },
             getState() {
                 return record.value;

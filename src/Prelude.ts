@@ -118,3 +118,7 @@ export class NotImplementedError extends Error {
         super(`${symbol}: Not implemented yet.`);
     }
 }
+
+export function never(_: never): never {
+    throw new Error('This branch should never be executed.');
+}

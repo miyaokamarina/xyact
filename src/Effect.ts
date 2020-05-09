@@ -11,7 +11,7 @@ declare module './Xyact' {
         }
 
         export interface SetupEffect<p extends readonly any[]> {
-            (...params: p): TeardownEffect | Falsy;
+            (...params: p): Promise<TeardownEffect | Falsy> | TeardownEffect | Falsy;
         }
 
         export interface TeardownEffect {
@@ -37,7 +37,7 @@ export function Effect<p extends readonly any[]>(setup: X.SetupEffect<p>, option
     let priority = options.priority || X.Priority.Minimum;
     let type = options.type || X.EffectType.Default;
 
-    function useEffect(...params: p) {
+    function useEffect(...params: p): void {
         let element = useElement() as Y.CustomElement;
         let hooks = element[Y.ElementProps.hooks] || (element[Y.ElementProps.hooks] = new WeakMap());
         let maybe: Y.EffectTask<p> = hooks.get(useEffect) as any;
@@ -50,7 +50,7 @@ export function Effect<p extends readonly any[]>(setup: X.SetupEffect<p>, option
         if (type === X.EffectType.Always || !maybe || !arrayEquals(task[Y.TaskProps.params], params)) {
             task[Y.TaskProps.params] = params;
 
-            scheduleTask(task);
+            scheduleTask(element[Y.ElementProps.root]!, task);
         }
     }
 

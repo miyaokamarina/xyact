@@ -57,17 +57,17 @@ declare module './Xyact' {
             parent = 2,
             previous = 3,
 
-            root = 4,
-            evaluation = 5,
-            dom = 6,
+            evaluation = 4,
+            dom = 5,
 
-            props = 7,
-            children = 8,
+            props = 6,
+            children = 7,
 
-            result = 9,
-            keys = 10,
-            attributes = 10,
-            hooks = 11,
+            result = 8,
+            keys = 9,
+            attributes = 9,
+            hooks = 10,
+            root = 11,
         }
 
         interface BaseElement<z extends Seed, c> {
@@ -77,7 +77,6 @@ declare module './Xyact' {
             [ElementProps.parent]: Element | undefined;
             [ElementProps.previous]: Element | undefined;
 
-            [ElementProps.root]: Root | undefined;
             [ElementProps.evaluation]: Task | undefined;
             [ElementProps.dom]: Pointer<any> | undefined;
 
@@ -89,6 +88,7 @@ declare module './Xyact' {
             [ElementProps.result]: Element | undefined;
             [ElementProps.keys]: PropertyKey[];
             [ElementProps.hooks]: WeakMap<object, any> | undefined;
+            [ElementProps.root]: Root | undefined;
         }
 
         export interface NativeElement extends BaseElement<NativeSeed, X.Node[]> {
@@ -145,7 +145,6 @@ function CustomElement(seed: Y.CustomSeed): Y.CustomElement {
         seed, //                  Seed
         u, //                     Parent
         u, //                     Previous
-        u, //                     Root
         u, //                     Evaluation
         u, //                     Dom
         {}, //                    Props
@@ -153,6 +152,7 @@ function CustomElement(seed: Y.CustomSeed): Y.CustomElement {
         u, //                     Result
         [], //                    Keys
         u, //                     Hooks
+        u, //                     Root
     ];
 }
 
@@ -162,7 +162,6 @@ function NativeElement(seed: Y.NativeSeed): Y.NativeElement {
         seed, //                   Seed
         u, //                      Parent
         u, //                      Previous
-        u, //                      Root
         u, //                      Evaluation
         u, //                      Dom
         {}, //                     Props

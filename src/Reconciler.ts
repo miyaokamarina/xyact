@@ -28,12 +28,12 @@ function relocate(root: Y.Root, element: Y.Element, oldElement: Y.Element, newEl
 }
 
 function teardownRemove(root: Y.Root, oldElement: Y.Element): void {
-    teardown(oldElement);
+    teardown(root, oldElement);
     root[Y.RootProps.instructions].push([Y.InstructionCode.RemoveNode, oldElement]);
 }
 
 function teardownReplace(root: Y.Root, oldElement: Y.Element, newElement: Y.Element) {
-    teardown(oldElement);
+    teardown(root, oldElement);
     root[Y.RootProps.instructions].push([Y.InstructionCode.ReplaceNode, oldElement, newElement]);
 
     return newElement;
@@ -82,9 +82,7 @@ function branch4(
     newSeed: Y.Seed,
     previous: Y.Element | undefined,
 ) {
-    updateElement(root, oldElement, newSeed);
-
-    return branch5(root, element, key, oldResult, newResult, oldElement, newNode, newSeed, previous);
+    return branch5(root, element, key, oldResult, newResult, updateElement(root, oldElement, newSeed), newNode, newSeed, previous);
 }
 
 function branch5(
@@ -124,7 +122,8 @@ function branch6(
     return link(newElement, previous);
 }
 
-function teardown(element: Y.Element): void {
+export function teardown(root: Y.Root, element: Y.Element): void {
+    void root;
     void element;
 
     throw new NotImplementedError('teardown');
@@ -147,18 +146,38 @@ function evaluateCustom(root: Y.Root, element: Y.CustomElement): void {
     }
 
     element[Y.ElementProps.keys] = objectKeys(props);
+    element[Y.ElementProps.root] = root;
 
     seed = Seed(seed[Y.SeedProps.type](props, children));
 
-    result = element[Y.ElementProps.result] = !(flags & Y.ElementFlags.Attached)
-        ? evaluateSeed(root, seed)
-        : seed[Y.SeedProps.type] !== result![Y.ElementProps.seed][Y.SeedProps.type]
-        ? teardownReplace(root, result!, evaluateSeed(root, seed))
-        : updateElement(root, result!, seed);
+    if (DEV) {
+        // 1. If the element isn’t attached (hence, has no result), evaluate its result seed.
+        // 2. If the element is attached, and its existing result type doesn’t equal the new result type, teardown old result and replace it with new one.
+        // 3. If the existing result type equals the new result type, just update the existing result.
+        // 4. Store the new result.
+
+        if (!(flags & Y.ElementFlags.Attached)) {
+            result = evaluateSeed(root, seed);
+        } else if (seed[Y.SeedProps.type] !== result![Y.ElementProps.seed][Y.SeedProps.type]) {
+            result = teardownReplace(root, result!, evaluateSeed(root, seed));
+        } else {
+            result = updateElement(root, result!, seed);
+        }
+
+        element[Y.ElementProps.result] = result;
+    } else {
+        // Optimized equivalent of the DEV-branch:
+        result = element[Y.ElementProps.result] = !(flags & Y.ElementFlags.Attached)
+            ? evaluateSeed(root, seed)
+            : seed[Y.SeedProps.type] !== result![Y.ElementProps.seed][Y.SeedProps.type]
+            ? teardownReplace(root, result!, evaluateSeed(root, seed))
+            : updateElement(root, result!, seed);
+    }
 
     element[Y.ElementProps.dom] = result[Y.ElementProps.dom];
 }
 
+// TODO: Fucking reduce nesting!
 function evaluateNative(root: Y.Root, element: Y.NativeElement): void {
     let instructions = root[Y.RootProps.instructions];
     let newSeed: Y.Seed = element[Y.ElementProps.seed];
@@ -269,6 +288,7 @@ function evaluateNative(root: Y.Root, element: Y.NativeElement): void {
                                         previous = branch6(root, element, key, oldResult, newResult, oldElement, newNode, newSeed, previous);
                                     }
                                 } else {
+                                    // Optimized equivalent of the DEV-branch:
                                     previous = (oldResultRecord
                                         ? ((oldElement = oldResultRecord[Y.ResultRecordProps.element]),
                                           oldResult.delete(key),
@@ -318,6 +338,7 @@ function evaluateNative(root: Y.Root, element: Y.NativeElement): void {
 export function evaluate(root: Y.Root, element: Y.Element): Y.Element {
     let seed = element[Y.ElementProps.seed];
     let parent = elements[0];
+    let flags = element[Y.ElementProps.flags];
 
     if (DEV && !element[Y.ElementProps.parent]) {
         Throw(Y.ErrorCode.InvalidEvaluation, Y.ErrorMessage.InvalidEvaluation);
@@ -331,22 +352,23 @@ export function evaluate(root: Y.Root, element: Y.Element): Y.Element {
         }
     }
 
-    element[Y.ElementProps.root] = root;
     element[Y.ElementProps.parent] = parent;
     elements.unshift(element);
 
     if (DEV) {
-        if (element[Y.ElementProps.flags] & Y.ElementFlags.Custom) {
+        if (flags & Y.ElementFlags.Custom) {
             evaluateCustom(root, element as Y.CustomElement);
         } else {
             evaluateNative(root, element as Y.NativeElement);
         }
     } else {
-        (element[Y.ElementProps.flags] & Y.ElementFlags.Custom ? evaluateCustom : evaluateNative)(root, element as Y.NativeElement & Y.CustomElement);
+        (flags & Y.ElementFlags.Custom ? evaluateCustom : evaluateNative)(root, element as Y.NativeElement & Y.CustomElement);
     }
 
     element[Y.ElementProps.props] = seed[Y.SeedProps.props];
     element[Y.ElementProps.children] = seed[Y.SeedProps.children];
+    element[Y.ElementProps.flags] = (flags & Y.ElementFlags.NotDirty) | Y.ElementFlags.Attached;
+    element[Y.ElementProps.evaluation] = u;
 
     elements.shift();
 

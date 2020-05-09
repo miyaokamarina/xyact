@@ -1,5 +1,6 @@
-import { DEV, NotImplementedError, u } from './Prelude';
+import { DEV, never, NotImplementedError, u } from './Prelude';
 import { X, Y } from './Xyact';
+import { evaluate, teardown } from './Reconciler';
 
 declare module './Xyact' {
     export namespace X {
@@ -19,9 +20,9 @@ declare module './Xyact' {
         export type Task = EffectTask<any> | EvaluationTask | TeardownTask;
 
         export const enum TaskType {
-            Effect = 1,
-            Evaluation = 2,
-            Teardown = 3,
+            Effect = 0,
+            Evaluation = 1,
+            Teardown = 2,
         }
 
         export const enum TaskProps {
@@ -127,61 +128,86 @@ export function EffectTask<p extends readonly any[]>(priority: X.Priority, eleme
     ];
 }
 
-export function scheduleTask(task: Y.Task): void {
+export function scheduleTask(root: Y.Root, task: Y.Task): void {
     let element = task[Y.TaskProps.element];
-    let flags = element[Y.ElementProps.flags];
     let type = task[Y.TaskProps.type];
     let evaluation = element[Y.ElementProps.evaluation];
     let priority = task[Y.TaskProps.priority];
 
+    // Don’t enqueue evaluation tasks of detached elements:
+    if (type === Y.TaskType.Evaluation && element[Y.ElementProps.flags] & Y.ElementFlags.Detached) return;
+
+    // Don’t enqueue evaluation task, if its element has existing evaluation task of higher or equal priority:
+    if (type === Y.TaskType.Evaluation && evaluation && evaluation[Y.TaskProps.priority] <= priority) return;
+
     if (type === Y.TaskType.Evaluation) {
-        if (flags & Y.ElementFlags.Detached) {
-            return;
-        }
-
-        if (evaluation) {
-            // If the element has an existing evaluation task:
-            //
-            // 1. If its priority is less than priority of new task, dequeue it.
-            // 2. Otherwise, short circuit.
-
-            if (evaluation[Y.TaskProps.priority] > priority) dequeueTask(evaluation);
-            else return;
-        }
+        // If the element has existing evaluation task of lower priority, dequeue it:
+        if (evaluation && evaluation[Y.TaskProps.priority] > priority) dequeueTask(root, evaluation);
 
         element[Y.ElementProps.evaluation] = task;
     }
 
-    if (type === Y.TaskType.Teardown) {
-        element[Y.ElementProps.flags] |= Y.ElementFlags.Detached;
-    }
+    if (type === Y.TaskType.Teardown) element[Y.ElementProps.flags] |= Y.ElementFlags.Detached;
 
     if (DEV) {
         if (priority === X.Priority.Realtime) {
-            executeTask(task);
+            executeTask(root, task);
         } else {
-            enqueueTask(task);
+            enqueueTask(root, task);
         }
     } else {
         // Optimized equivalent of the DEV-branch:
-        (priority === X.Priority.Realtime ? executeTask : enqueueTask)(task);
+        (priority === X.Priority.Realtime ? executeTask : enqueueTask)(root, task);
     }
 }
 
-export function executeTask(task: Y.Task): void {
-    void task;
+export function executeTask(root: Y.Root, task: Y.Task): void {
+    let type = task[Y.TaskProps.type];
 
-    throw new NotImplementedError('executeTask');
+    if (DEV) {
+        if (type === Y.TaskType.Evaluation) {
+            executeEvaluationTask(root, task as Y.EvaluationTask);
+        } else if (type === Y.TaskType.Teardown) {
+            executeTeardownTask(root, task as Y.TeardownTask);
+        } else if (type === Y.TaskType.Effect) {
+            executeEffectTask(root, task as Y.EffectTask<any>);
+        } else {
+            never(type);
+        }
+    } else {
+        executors[type](root, task as any);
+    }
+
+    dequeueTask(root, task);
 }
 
-export function enqueueTask(task: Y.Task): void {
+function enqueueTask(root: Y.Root, task: Y.Task): void {
+    void root;
     void task;
 
     throw new NotImplementedError('enqueueTask');
 }
 
-export function dequeueTask(task: Y.Task): void {
+function dequeueTask(root: Y.Root, task: Y.Task): void {
+    void root;
     void task;
 
     throw new NotImplementedError('dequeueTask');
 }
+
+function executeEvaluationTask(root: Y.Root, task: Y.EvaluationTask): void {
+    evaluate(root, task[Y.TaskProps.element]);
+}
+
+function executeTeardownTask(root: Y.Root, task: Y.TeardownTask): void {
+    teardown(root, task[Y.TaskProps.element]);
+}
+
+async function executeEffectTask<p extends readonly any[]>(_: Y.Root, task: Y.EffectTask<p>): Promise<void> {
+    // TODO: Handle errors.
+
+    await task[Y.TaskProps.teardown]?.();
+    task[Y.TaskProps.teardown] = (await task[Y.TaskProps.setup](...task[Y.TaskProps.params])) || u;
+}
+
+const executors = [executeEvaluationTask, executeTeardownTask, executeEffectTask] as const;
